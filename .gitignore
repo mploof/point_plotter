@@ -1,3 +1,6 @@
+# Processing files
+*.properties
+
 # Compiled Object files
 *.slo
 *.lo
