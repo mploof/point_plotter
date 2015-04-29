@@ -19,11 +19,13 @@ int line_interval = 1;
 
 boolean do_this = true;
 boolean mouse_bounce = false;
+boolean load_vals = false;
 String val = "null";
+int command = 0;
 
 void setup () {
  // set the window size:
-   size(600, 600);        
+   size(800, 800);        
    
    myPort = new Serial(this, Serial.list()[5], 9600);
    
@@ -60,66 +62,75 @@ void setup () {
    }
 }
  
-void draw () {
+void draw () {  
   
   if(mouse_bounce == false && mousePressed == true){
-    println("Mouse clicked, sending command ");
-    //myPort.write('1');
     mouse_bounce = true;
-    getPoints('1', 10, 255, 0, 0);
-    getPoints('2', 5, 0, 0, 255);
-    /*
-    if ( myPort.available() > 0) {  // If data is available,
-      val = myPort.readStringUntil('\n');         // read it and store it in val
-    } 
-    println(val);
-    myPort.clear();
-    */
+    load_vals = true;
+    command++;
+    print("Command: ");
+    println(command);
+    print("load_vals: ");
+    println(load_vals);
   }
   
   if(mousePressed == false){
     mouse_bounce = false;
   }
   
-  /*
-  while(do_this){
+  if(load_vals == true){
     
-    println("doing this");
-  
-    // Get interpolation points
-    //getPoints('1', 255, 0, 0);
+    while(load_vals){
+      
+      println("doing this");
+      
+      switch(command){
     
-    // Get control points
-    //getPoints('2', 0, 255, 0);
+      case 1:
+        // Get interpolation points
+        getPoints('1', 10, 255, 0, 0);
+        break;
+      
+      case 2:
+        // Get control points
+        getPoints('2', 3, 0, 0, 255);
+        break;
+      
+      case 3:
+        // Get Bezier curve points   
+        getPoints('3', 5, 139, 0, 139);
+        break;
+      }
+      
+      println("quitting loop");
     
-    // Get Bezier curve points   
-    //getPoints('3', 0, 0, 255);
-  
-    do_this = false;
+      load_vals = false;
+    }
+    
+    delay(10);
   }
-  */
+  
 }
 
 void getPoints(char p_command,int p_size, int p_r, int p_g, int p_b){
   println("getting points");
+  println("delay");
+  delay(500);
   
-  println("sending command");
-  myPort.write(p_command);
-  
-  println("Waiting");
-  delay(5000);
-  
+  if(p_command != 0){
+    print("sending command ");
+    println(p_command);
+    myPort.write(p_command);
+  }
+ 
   println("entering loop");
   while(true){
-    delay(100);
+    delay(10);
     if(myPort.available() > 0){
       // get the ASCII string:
        String inString = myPort.readStringUntil('\n');
        print("inString: ");
        println(inString);
-       
-       if(inString == "done")
-         return;
        
        if (inString != null) {
        
@@ -127,7 +138,14 @@ void getPoints(char p_command,int p_size, int p_r, int p_g, int p_b){
          inString = trim(inString);
          
          // convert to an int and map to the screen height:
-         float inByte = float(inString); 
+         float inByte = float(inString);
+        
+        if(inByte > 5000){
+           println("reached stop code");
+           myPort.write('0');  // Stop arduino-side loop
+           return;
+         }
+         
          inByte = map(inByte, -(line_count*line_interval/2), (line_count*line_interval/2), 0, height);
          
          // Set the x coordinate first  
@@ -149,12 +167,6 @@ void getPoints(char p_command,int p_size, int p_r, int p_g, int p_b){
          
          }
          
-       }
-       // Once we're out of input points, quit the loop
-       else if(inString == null){
-         println("Out of input");
-         myPort.write('0');
-         return;
        }
     }  
   }
